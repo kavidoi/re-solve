@@ -18,7 +18,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: "${JWT_EXPIRES_IN}"
       - key: CORS_ORIGIN
-        value: "https://resolve-frontend.onrender.com"
+        value: "https://resolve-xb6d.onrender.com"
 
   - type: static_site
     name: resolve-frontend
