@@ -153,9 +153,62 @@ const listIncomingRequests = async (req, res, next) => {
     }
 };
 
+// @desc    Accept a pending friend request
+// @route   PUT /api/friends/request/:id/accept
+// @access  Private
+const acceptRequest = async (req, res, next) => {
+  const requestId = req.params.id;
+  const userId = new mongoose.Types.ObjectId(req.user.id);
+  try {
+    const friendship = await Friendship.findById(requestId);
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+    if (!friendship.recipient.equals(userId)) {
+      return res.status(403).json({ message: 'Not authorized to accept this request' });
+    }
+    if (friendship.status !== 'pending') {
+      return res.status(400).json({ message: 'Cannot accept a non-pending request' });
+    }
+    friendship.status = 'accepted';
+    await friendship.save();
+    res.status(200).json({ message: 'Friend request accepted', friendship });
+  } catch (error) {
+    console.error('Error accepting friend request:', error);
+    next(error);
+  }
+};
+
+// @desc    Reject a pending friend request
+// @route   PUT /api/friends/request/:id/reject
+// @access  Private
+const rejectRequest = async (req, res, next) => {
+  const requestId = req.params.id;
+  const userId = new mongoose.Types.ObjectId(req.user.id);
+  try {
+    const friendship = await Friendship.findById(requestId);
+    if (!friendship) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+    if (!friendship.recipient.equals(userId)) {
+      return res.status(403).json({ message: 'Not authorized to reject this request' });
+    }
+    if (friendship.status !== 'pending') {
+      return res.status(400).json({ message: 'Cannot reject a non-pending request' });
+    }
+    friendship.status = 'rejected';
+    await friendship.save();
+    res.status(200).json({ message: 'Friend request rejected', friendship });
+  } catch (error) {
+    console.error('Error rejecting friend request:', error);
+    next(error);
+  }
+};
+
 module.exports = {
     sendFriendRequest,
     listFriends,
     listIncomingRequests,
-    // Add other friend-related controllers here (acceptRequest, rejectRequest, listFriends, etc.)
+    acceptRequest,
+    rejectRequest
 }; 

@@ -1,0 +1,25 @@
+{
+  "app": {
+    "title": "Re:solve"
+  },
+  "nav": {
+    "dashboard": "Tablero",
+    "groups": "Grupos",
+    "friends": "Amigos",
+    "activity": "Actividad"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión"
+  },
+  "action": {
+    "addExpense": "Agregar gasto"
+  },
+  "quickActions": {
+    "title": "Acciones Rápidas",
+    "addExpense": "Agregar gasto",
+    "createGroup": "Crear grupo",
+    "addFriend": "Agregar amigo"
+  }
+}

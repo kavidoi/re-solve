@@ -3,9 +3,9 @@ const jwt = require('jsonwebtoken');
 
 // Helper function to generate JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '30d', // Use environment variable or default
-  });
+  const secret = process.env.JWT_SECRET || 'dev_default_secret';
+  const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
+  return jwt.sign({ id }, secret, { expiresIn });
 };
 
 // @desc    Register a new user
@@ -50,14 +50,15 @@ const registerUser = async (req, res, next) => {
 // @access  Public
 const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
+  console.log(`loginUser invoked with email: ${email}`);
 
   try {
-    // Check for user email
-    // Explicitly select password as it's excluded by default in the model
     const user = await User.findOne({ email }).select('+password');
+    console.log('Found user:', !!user);
 
     // Check if user exists and password matches
     if (user && (await user.comparePassword(password))) {
+      console.log('Password verified');
       res.json({
         _id: user._id,
         name: user.name,
@@ -65,16 +66,16 @@ const loginUser = async (req, res, next) => {
         token: generateToken(user._id),
       });
     } else {
-      // Use a generic message for security
-      res.status(401).json({ message: 'Invalid email or password' });
+      console.log('Invalid credentials');
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
-    console.error('Error in loginUser:', error);
-    next(error); // Pass error to global error handler
+    console.error('Error in loginUser:', error.stack || error);
+    return res.status(500).json({ message: error.message || 'Something went wrong during login.' });
   }
 };
 
 module.exports = {
   registerUser,
   loginUser,
-}; 
+};

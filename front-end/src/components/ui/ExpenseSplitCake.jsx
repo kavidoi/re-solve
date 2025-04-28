@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CakeIcon } from '@heroicons/react/24/solid';
 
 const MAX_SLICES_PER_PERSON = 5;
 
@@ -71,43 +70,15 @@ const ExpenseSplitCake = ({
 
   // Update participant shares when a checkbox is toggled
   const handleIncludeToggle = (participantId) => {
-    let updatedShares = participantShares.map(share => {
-      if (share.id === participantId) {
-        return { ...share, included: !share.included };
-      }
-      return share;
-    });
-    
-    // Recalculate percentages for included participants
-    const includedParticipants = updatedShares.filter(p => p.included);
-    const numIncluded = includedParticipants.length;
-    
-    if (numIncluded > 0) {
-      const equalShare = 100 / numIncluded;
-      updatedShares = updatedShares.map(share => {
-        if (share.included) {
-          return {
-            ...share,
-            percentage: equalShare,
-            amount: (totalAmount * equalShare) / 100,
-            slices: 1 // Reset to equal slices
-          };
-        }
-        return {
-          ...share,
-          percentage: 0,
-          amount: 0,
-          slices: 0
-        };
-      });
-    } else {
-       // If no one is included, reset everyone
-       updatedShares = updatedShares.map(share => ({ ...share, percentage: 0, amount: 0, slices: 0 }));
-    }
-      
+    // Just toggle included, do not recalc others
+    let updatedShares = participantShares.map(share =>
+      share.id === participantId ? { ...share, included: !share.included } : share
+    );
     setParticipantShares(updatedShares);
-    onSplitChange(updatedShares); // Report change to parent
+    if (typeof onSplitChange === 'function') onSplitChange(updatedShares);
   };
+
+
 
   // Add a slice to a participant
   const handleAddSlice = (participantId) => {
@@ -143,98 +114,72 @@ const ExpenseSplitCake = ({
     });
         
     setParticipantShares(updatedShares);
-    onSplitChange(updatedShares); // Report change to parent
+    if (typeof onSplitChange === 'function') onSplitChange(updatedShares); // Report change to parent
   };
 
-  // Handle direct percentage input
-  const handlePercentageChange = (participantId, newPercentageStr) => {
-    // Ensure percentage is a valid number
-    const percentValue = parseFloat(newPercentageStr);
-    if (isNaN(percentValue) || percentValue < 0 || percentValue > 100) return; // Basic validation
+  // --- New local state for editing percentages ---
+  const [editingPercentages, setEditingPercentages] = useState({});
 
-    const otherIncludedParticipants = participantShares.filter(p => p.included && p.id !== participantId);
-    const numOtherIncluded = otherIncludedParticipants.length;
-    const maxPossibleForOthers = 100 - percentValue;
+  // Handle direct percentage input (edit only, don't enforce yet)
+  const handlePercentageEdit = (participantId, value) => {
+    setEditingPercentages(prev => ({ ...prev, [participantId]: value }));
+  };
 
-    if (numOtherIncluded === 0 && percentValue !== 100) {
-       // Only this person is included, must be 100%
-       // Optionally show an error or force to 100?
-       return; 
+  // On blur or Enter, enforce 100% and update shares
+  const commitPercentageChange = (participantId) => {
+    const editValue = editingPercentages[participantId];
+    const percentValue = parseFloat(editValue);
+    if (isNaN(percentValue) || percentValue < 0 || percentValue > 100) {
+      // Reset to actual value if invalid
+      setEditingPercentages(prev => ({ ...prev, [participantId]: undefined }));
+      return;
     }
-
-    // Calculate new shares
-    let updatedShares = participantShares.map(share => {
+    const included = participantShares.filter(p => p.included);
+    const others = included.filter(p => p.id !== participantId);
+    const otherTotal = others.reduce((sum, p) => sum + p.percentage, 0);
+    const remainder = 100 - percentValue;
+    // Distribute remainder proportionally to others
+    let distributed = 0;
+    let updatedShares = participantShares.map((share, idx) => {
+      if (!share.included) return { ...share, percentage: 0, amount: 0 };
       if (share.id === participantId) {
-          // Approximate slices based on percentage (might result in fractional slices)
-          const approximateSlices = percentValue / (100 / participantShares.filter(p => p.included).length);
-          return {
-              ...share,
-              percentage: percentValue,
-              amount: (totalAmount * percentValue) / 100,
-              slices: approximateSlices
-          };
+        const slices = percentValue / (100 / included.length);
+        return { ...share, percentage: percentValue, amount: (totalAmount * percentValue) / 100, slices };
       }
-      return share;
-  });
-
-    // Distribute remaining percentage among others proportionally
-    const remainingPercentage = 100 - percentValue;
-    let distributedTotal = 0;
-    let indicesToAdjust = [];
-    let currentOtherTotal = 0;
-
-    otherIncludedParticipants.forEach((p, index) => {
-        currentOtherTotal += p.percentage;
-        indicesToAdjust.push(participantShares.findIndex(share => share.id === p.id));
+      // Proportional distribution
+      let newPerc = otherTotal > 0 ? (share.percentage / otherTotal) * remainder : remainder / others.length;
+      // Ensure last gets the rounding error
+      if (share.id === others[others.length - 1]?.id) newPerc = remainder - distributed;
+      distributed += newPerc;
+      const slices = newPerc / (100 / included.length);
+      return { ...share, percentage: newPerc, amount: (totalAmount * newPerc) / 100, slices };
     });
-
-    updatedShares = updatedShares.map((share, index) => {
-      if (indicesToAdjust.includes(index)) {
-        const originalShareOfOtherTotal = currentOtherTotal === 0 ? (1 / numOtherIncluded) : (share.percentage / currentOtherTotal);
-        let newPercentage = remainingPercentage * originalShareOfOtherTotal;
-        
-        // Crude rounding handling - add remainder to last element
-        if (index === indicesToAdjust[indicesToAdjust.length - 1]) {
-            newPercentage = remainingPercentage - distributedTotal;
-        }
-        
-        distributedTotal += newPercentage;
-        const approximateSlices = newPercentage / (100 / participantShares.filter(p => p.included).length);
-
-        return {
-            ...share,
-            percentage: newPercentage,
-            amount: (totalAmount * newPercentage) / 100,
-            slices: approximateSlices
-        };
-      }
-      return share;
-    });
-
     setParticipantShares(updatedShares);
-    onSplitChange(updatedShares); // Report change to parent
-};
+    setEditingPercentages(prev => ({ ...prev, [participantId]: undefined }));
+    if (typeof onSplitChange === 'function') onSplitChange(updatedShares);
+  };
+
 
   // Handle setting slices directly (clicking a specific slice)
   const handleSetSlices = (participantId, newSlices) => {
     if (newSlices < 0 || newSlices > MAX_SLICES_PER_PERSON) return;
-    let totalSlices = participantShares.reduce((acc, p) => acc + (p.included ? p.slices : 0), 0);
-    const current = participantShares.find(p => p.id === participantId)?.slices || 0;
-    totalSlices = totalSlices - current + newSlices;
-    if (totalSlices <= 0) return;
+    // Only update the relevant participant's slices and percentage, do NOT recalc others
     const updatedShares = participantShares.map(share => {
       if (!share.included) return share;
       if (share.id === participantId) {
+        // Recalc percentage for this participant only, based on their new slices and total included slices
+        const included = participantShares.filter(p => p.included);
+        const totalSlices = included.reduce((acc, p) => acc + (p.id === participantId ? newSlices : p.slices), 0);
         const percentage = (newSlices / totalSlices) * 100;
         return { ...share, slices: newSlices, percentage, amount: (totalAmount * percentage) / 100 };
-      } else {
-        const percentage = (share.slices / totalSlices) * 100;
-        return { ...share, percentage, amount: (totalAmount * percentage) / 100 };
       }
+      return share;
     });
     setParticipantShares(updatedShares);
-    onSplitChange(updatedShares);
+    if (typeof onSplitChange === 'function') onSplitChange(updatedShares);
   };
+
+
 
   // Assign a color based on participant index for stability
   function getParticipantColor(index) {
@@ -253,98 +198,28 @@ const ExpenseSplitCake = ({
     
     return (
       <div className="flex flex-col items-center mb-4" aria-label="Expense share visualization">
-        {/* Smaller cake with shadow effect and interaction */}
-        <div 
-          className="relative w-36 h-36 rounded-full overflow-hidden mb-4 shadow-lg group"
-          onMouseLeave={() => setHighlightedParticipantId(null)} // Clear highlight when mouse leaves cake area
-        >
-          {/* Render cake slices as circular segments with individual animations */}
-          {includedParticipants.map((participant, index) => {
-            // Calculate degrees for this participant's slices
-            const degrees = (participant.slices / totalSlices) * 360;
-            // Calculate starting angle based on previous participants
+        {/* Main cake visualization using conic-gradient */}
+        {(() => {
+          const gradientSegments = includedParticipants.map((participant, index) => {
             const startAngle = includedParticipants
               .slice(0, index)
-              .reduce((acc, p) => acc + (p.slices / totalSlices) * 360, 0);
-            
-            const isHighlighted = highlightedParticipantId === participant.id;
-            
-            return (
-              <div 
-                key={participant.id}
-                className={`absolute w-full h-full transform-gpu cursor-pointer`}
-                style={{
-                  backgroundColor: participant.color,
-                  clipPath: `conic-gradient(from ${startAngle}deg, currentColor ${degrees}deg, transparent ${degrees}deg)`,
-                  transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  filter: isHighlighted ? 'brightness(1.2) drop-shadow(0 0 4px rgba(255,255,255,0.6))' : 'brightness(1)',
-                  transform: isHighlighted ? 'scale(1.05)' : 'scale(1)',
-                  zIndex: isHighlighted ? 10 : 1 // Ensure highlighted is on top
-                }}
-                onMouseEnter={() => setHighlightedParticipantId(participant.id)}
-                aria-label={`${participant.name}'s share: ${participant.percentage.toFixed(0)}%`}
-              />
-            );
-          })}
+              .reduce((sum, p) => sum + p.slices, 0) / totalSlices * 360;
+            const sliceAngle = (participant.slices / totalSlices) * 360;
+            const endAngle = startAngle + sliceAngle;
+            return `${participant.color} ${startAngle.toFixed(2)}deg ${endAngle.toFixed(2)}deg`;
+          }).join(', ');
           
-          {/* Slice divider lines for visual separation - subtle */}
-          {includedParticipants.length > 1 && includedParticipants.map((_, index) => {
-            if (index === 0) return null;  // Skip first divider
-            
-            // Calculate angle for this divider
-            const angle = includedParticipants
-              .slice(0, index)
-              .reduce((acc, p) => acc + (p.slices / totalSlices) * 360, 0);
-              
-            return (
-              <div
-                key={`divider-${index}`}
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  borderTop: '1px solid rgba(255,255,255,0.2)', // More subtle divider
-                  width: '50%',
-                  height: '50%',
-                  transformOrigin: 'bottom left',
-                  transform: `rotate(${angle}deg)`,
-                  left: '50%',
-                  top: '0',
-                  zIndex: 5 // Below highlighted slice, above others
-                }}
-              />
-            );
-          })}
-          
-          {/* Add a center decoration - subtle */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 shadow-inner z-20" />
-          </div>
-        </div>
-        
-        {/* Legend for the cake - interactive */}
-        <div className="flex flex-wrap justify-center gap-2 max-w-xs" role="list" aria-label="Participant color legend">
-          {includedParticipants.map(participant => (
-            <div 
-              key={participant.id} 
-              className={`flex items-center px-2 py-1 rounded-full bg-secondary dark:bg-gray-700 border border-accent dark:border-gray-600 shadow-sm cursor-pointer transition-all duration-200 ${highlightedParticipantId === participant.id ? 'ring-2 ring-offset-1 dark:ring-offset-gray-800' : ''}`}
-              role="listitem"
-              style={{ 
-                borderLeftColor: participant.color, 
-                borderLeftWidth: '3px',
-                ringColor: participant.color, // Dynamic ring color
-                transform: highlightedParticipantId === participant.id ? 'scale(1.05)' : 'scale(1)' 
+          return (
+            <div
+              className="relative w-28 h-28 rounded-full overflow-hidden mb-2 border border-accent dark:border-gray-600 bg-secondary dark:bg-gray-700"
+              style={{
+                backgroundImage: `conic-gradient(from 0deg, ${gradientSegments})`,
+                transition: 'background-image 300ms cubic-bezier(0.4, 0, 0.2, 1)',
               }}
-              onMouseEnter={() => setHighlightedParticipantId(participant.id)}
-              onMouseLeave={() => setHighlightedParticipantId(null)}
-            >
-              <span 
-                className="w-3 h-3 rounded-full mr-1.5" // Slightly more spacing
-                style={{ backgroundColor: participant.color }}
-                aria-hidden="true"
-              />
-              <span className="text-xs text-gray-700 dark:text-gray-300">{participant.name}</span>
-            </div>
-          ))}
-        </div>
+              aria-label="Expense share visualization"
+            />
+          );
+        })()}
       </div>
     );
   };
@@ -354,13 +229,11 @@ const ExpenseSplitCake = ({
     if (!shouldShowMiniCakes || !participant.included) return null;
     const filledCount = Math.floor(participant.slices);
     return (
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-1" role="group" aria-label={`${participant.name} slice controls`}>
         {Array.from({ length: MAX_SLICES_PER_PERSON }, (_, i) => {
           const idx = i + 1;
-          // Determine if this slice is filled (consider hover)
-          const isHoveredGroup = hoveredSlice.id === participant.id;
-          const targetCount = isHoveredGroup ? hoveredSlice.count : filledCount;
-          const filled = idx <= targetCount;
+          const isHovered = hoveredSlice.id === participant.id && hoveredSlice.count === idx;
+          const isSelected = idx <= (hoveredSlice.id === participant.id ? hoveredSlice.count : filledCount);
           return (
             <button
               key={idx}
@@ -368,7 +241,7 @@ const ExpenseSplitCake = ({
               onMouseEnter={() => setHoveredSlice({ id: participant.id, count: idx })}
               onMouseLeave={() => setHoveredSlice({ id: null, count: 0 })}
               onClick={() => handleSetSlices(participant.id, idx)}
-              className="p-1 focus:outline-none"
+              className="p-1 focus:ring-2 focus:ring-offset-1 focus:ring-primary"
               style={{ background: 'transparent' }}
               aria-label={`Set ${participant.name} to ${idx} of ${MAX_SLICES_PER_PERSON} slices`}
             >
@@ -376,14 +249,13 @@ const ExpenseSplitCake = ({
                 role="img"
                 aria-hidden="true"
                 style={{
-                  color: filled ? participant.color : '#ccc',
-                  transform: filled && isHoveredGroup ? 'scale(1.3)' : 'scale(1)',
-                  filter: isHoveredGroup && filled ? 'drop-shadow(0 0 4px rgba(0,0,0,0.5))' : 'none'
+                  color: isSelected ? participant.color : '#3b82f6',
+                  opacity: isSelected ? 1 : 0.5,
+                  transform: isHovered ? 'scale(1.3)' : 'scale(1)',
+                  filter: isHovered ? 'drop-shadow(0 0 4px rgba(0,0,0,0.5))' : 'none'
                 }}
                 className="text-xl transition-all duration-200"
-              >
-                🍰
-              </span>
+              >🍰</span>
             </button>
           );
         })}
@@ -448,6 +320,10 @@ const ExpenseSplitCake = ({
       <div className="sr-only" aria-live="polite">
         {hasFractionalSlices ? 'Exact proportions cannot be visually represented.' : ''}
       </div>
+      {/* Announce when mini-cakes are hidden due to excessive slices */}
+      <div className="sr-only" aria-live="polite">
+        {(!shouldShowMiniCakes && !hasFractionalSlices) ? 'Mini-cake icons hidden: a participant has more than maximum slices.' : ''}
+      </div>
       
       {/* Main cake visualization */}
       {renderMainCake()}
@@ -472,7 +348,7 @@ const ExpenseSplitCake = ({
                     id={`participant-${participant.id}`}
                     checked={participant.included}
                     onChange={() => handleIncludeToggle(participant.id)}
-                    className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 mr-1 min-w-[32px] min-h-[32px]"
+                    className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 mr-1 min-w-[32px] min-h-[32px]"
                     onFocus={() => setHighlightedParticipantId(participant.id)} // Highlight on focus
                     onBlur={() => setHighlightedParticipantId(null)}
                   />
@@ -497,13 +373,14 @@ const ExpenseSplitCake = ({
                       min="0"
                       max="100"
                       step="1"
-                      value={participant.included ? participant.percentage.toFixed(0) : "0"}
-                      onChange={(e) => handlePercentageChange(participant.id, e.target.value)}
+                      value={editingPercentages[participant.id] !== undefined ? editingPercentages[participant.id] : (participant.included ? participant.percentage.toFixed(0) : "0")}
+                      onChange={e => handlePercentageEdit(participant.id, e.target.value)}
+                      onBlur={() => { commitPercentageChange(participant.id); setHighlightedParticipantId(null); }}
+                      onKeyDown={e => { if (e.key === 'Enter') { commitPercentageChange(participant.id); e.target.blur(); } }}
                       disabled={!participant.included}
                       className={`w-10 p-0.5 text-center text-xs border rounded dark:text-white transition-all duration-200 ${isHighlighted ? 'border-primary dark:border-primary ring-1 ring-primary dark:bg-gray-600' : 'border-gray-300 dark:border-gray-600 dark:bg-gray-700'}`}
                       aria-label={`${participant.name}'s percentage share`}
                       onFocus={() => setHighlightedParticipantId(participant.id)}
-                      onBlur={() => setHighlightedParticipantId(null)}
                     />
                     <span className="text-gray-500 dark:text-gray-400">%</span>
                   </div>

@@ -18,7 +18,11 @@ const expenseSchema = new mongoose.Schema({
   paidBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+  },
+  unregisteredPayerName: {
+    type: String,
+    trim: true,
+    default: null,
   },
   group: {
     type: mongoose.Schema.Types.ObjectId,

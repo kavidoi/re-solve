@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const connectDB = require('./config/database');
+const path = require('path');
 
 // Import route files
 const groupRoutes = require('./routes/groupRoutes');
@@ -26,7 +27,26 @@ app.use(
     contentSecurityPolicy: false
   })
 ); // Security headers (CSP disabled for inline scripts)
-app.use(cors()); // Enable CORS
+
+// CORS configuration: allow all origins in development, restrict to CORS_ORIGIN in production
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    // In production, only allow requests from the specified origin
+    if (origin === process.env.CORS_ORIGIN) {
+      return callback(null, true);
+    }
+    callback(new Error('CORS policy violation: ' + origin));
+  },
+  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE'],
+  credentials: true,
+};
+app.use(cors(corsOptions)); // Enable CORS with options
+
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(morgan('dev')); // HTTP request logging
@@ -46,18 +66,26 @@ app.use('/api/activity', activityRoutes); // Mount activity routes
 app.use('/api/expenses', expenseRoutes); // Mount expense routes
 app.use('/api/friends', friendRoutes); // Mount friend routes
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
+// Serve React build (SPA) for all other routes
+app.use(express.static(path.join(__dirname, '../front-end/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../front-end/dist', 'index.html'));
 });
 
-// Serve frontend static files
-const path = require('path');
-app.use(express.static(path.join(__dirname, '../front-end/dist')));
-// Catch-all: serve index.html for any route not starting with /api
-app.get(/^\/(?!api).*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../front-end/dist/index.html'));
+// Enhanced error handling middleware
+app.use((err, req, res, next) => {
+    console.error('--- ERROR CAUGHT BY GLOBAL HANDLER ---');
+    console.error(err);
+    // Provide detailed error in development, generic in production
+    if (process.env.NODE_ENV === 'production') {
+        res.status(500).json({ message: 'Something went wrong!' });
+    } else {
+        res.status(500).json({
+            message: err.message || 'Something went wrong!',
+            stack: err.stack,
+            error: err
+        });
+    }
 });
 
 // Start server

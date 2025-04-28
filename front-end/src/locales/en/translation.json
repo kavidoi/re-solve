@@ -1,0 +1,25 @@
+{
+  "app": {
+    "title": "Re:solve"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "groups": "Groups",
+    "friends": "Friends",
+    "activity": "Activity"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "action": {
+    "addExpense": "Add Expense"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "addExpense": "Add Expense",
+    "createGroup": "Create Group",
+    "addFriend": "Add Friend"
+  }
+}

@@ -49,20 +49,60 @@ const createExpense = async (req, res, next) => {
     return res.status(400).json({ message: `Split amounts must add up to the total expense amount ($${amount}), currently $${calculatedSplitTotal}` });
   }
 
-  // --- Advanced Validation (Optional but recommended) --- 
-  // TODO: Validate that paidBy user exists
-  // TODO: Validate that all users in splits exist
-  // TODO: If groupId is provided, validate that the group exists and all involved users (paidBy, splits) are members
+  // --- Advanced Validation --- 
+  // Validate group or 1:1 context
+  if (groupId) {
+    // Check group exists
+    const group = await Group.findById(groupId).populate('members', '_id name');
+    if (!group) {
+      return res.status(400).json({ message: 'Group not found' });
+    }
+    // All splits and paidBy must be group members
+    const memberIds = group.members.map(m => m._id.toString());
+    const memberNames = group.members.map(m => m.name);
+    // PaidBy must be in group (if registered)
+    if (paidBy !== 'You' && mongoose.Types.ObjectId.isValid(paidBy)) {
+      if (!memberIds.includes(paidBy)) {
+        return res.status(400).json({ message: 'Payer is not a member of the selected group' });
+      }
+    }
+    // All splits must be group members (by name or id)
+    for (const split of splits) {
+      if (split.user !== 'You' && !memberNames.includes(split.user) && !memberIds.includes(split.user)) {
+        return res.status(400).json({ message: `Split participant ${split.user} is not a member of the selected group` });
+      }
+    }
+  } else {
+    // 1:1: must be exactly two participants: logged-in user and friend
+    if (splits.length !== 2) {
+      return res.status(400).json({ message: '1:1 expenses must be between exactly two people' });
+    }
+    // One must be logged-in user, other must be a friend (by name or id)
+    const splitNames = splits.map(s => s.user);
+    if (!splitNames.includes('You')) {
+      return res.status(400).json({ message: 'You must be one of the participants in a 1:1 expense' });
+    }
+    // Optionally: check that the other is a valid friend (could be improved)
+  }
 
   // --- Map user identifiers to ObjectIds OR keep name for unregistered --- 
   let mappedSplits = [];
+  let paidByUserId = null;
+  let unregisteredPayerName = null;
   try {
-    // Convert paidBy identifier to ObjectId if it's not 'You'
-    const paidByUserId = paidBy === 'You' ? loggedInUserId : (await User.findOne({ name: paidBy }))?._id;
-    if (!paidByUserId) {
-        throw new Error(`Payer with name "${paidBy}" not found.`);
+    // Determine payer: map to ID or keep unregistered name
+    if (paidBy === 'You') {
+      paidByUserId = loggedInUserId;
+    } else if (mongoose.Types.ObjectId.isValid(paidBy)) {
+      paidByUserId = paidBy;
+    } else {
+      const payerDoc = await User.findOne({ name: paidBy });
+      if (payerDoc) {
+        paidByUserId = payerDoc._id;
+      } else {
+        unregisteredPayerName = paidBy;
+      }
     }
-
     mappedSplits = await Promise.all(splits.map(async (split) => {
       let userId = null;
       let unregisteredName = null;
@@ -71,11 +111,16 @@ const createExpense = async (req, res, next) => {
         userId = loggedInUserId;
       } else {
         // Try to find registered user
-        const userDoc = await User.findOne({ name: split.user }); 
-        if (userDoc) {
-          userId = userDoc._id; // Found registered user
+        let userDoc;
+        if (mongoose.Types.ObjectId.isValid(split.user)) {
+          userId = split.user;
         } else {
-          unregisteredName = split.user; // Keep name for unregistered participant
+          userDoc = await User.findOne({ name: split.user }); 
+          if (userDoc) {
+            userId = userDoc._id; // Found registered user by name
+          } else {
+            unregisteredName = split.user; // Keep name for unregistered participant
+          }
         }
       }
 
@@ -87,8 +132,10 @@ const createExpense = async (req, res, next) => {
       }
       
       // Determine if this share belongs to the person who paid
-      const isPayerShare = userId ? userId.toString() === paidByUserId.toString() : false; // Unregistered users cannot be the payer via this logic
-      
+      const isPayerShare =
+        (userId && paidByUserId && userId.toString() === paidByUserId.toString()) ||
+        (unregisteredName && unregisteredPayerName && unregisteredName === unregisteredPayerName);
+       
       return { 
         user: userId,                // ObjectId or null
         unregisteredUserName: unregisteredName, // String or null
@@ -107,7 +154,8 @@ const createExpense = async (req, res, next) => {
     const expense = new Expense({
       description,
       amount,
-      paidBy: paidByUserId, 
+      paidBy: paidByUserId,
+      unregisteredPayerName: unregisteredPayerName,
       createdBy: loggedInUserId,
       group: groupId || null, 
       date: new Date(),

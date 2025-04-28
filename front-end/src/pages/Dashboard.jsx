@@ -5,6 +5,7 @@ import BalanceOverview from '../components/dashboard/BalanceOverview';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import GroupsList from '../components/dashboard/GroupsList';
 import FriendsList from '../components/dashboard/FriendsList';
+import PendingRequestsList from '../components/dashboard/PendingRequestsList';
 import AddExpenseModal from '../components/ui/AddExpenseModal';
 import AddFriendModal from '../components/ui/AddFriendModal';
 import axios from 'axios';
@@ -207,6 +208,7 @@ const Dashboard = () => {
           loading={activityLoading}
           error={activityError}
         />
+        <PendingRequestsList />
         <FriendsList />
       </div>
       
@@ -220,6 +222,7 @@ const Dashboard = () => {
         isOpen={isAddFriendModalOpen}
         onClose={handleCloseAddFriendModal}
         onSendRequest={handleSendFriendRequest}
+        status={friendRequestStatus}
       />
     </div>
   );

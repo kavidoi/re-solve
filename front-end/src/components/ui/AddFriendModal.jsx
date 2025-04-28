@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const AddFriendModal = ({ isOpen, onClose, onSendRequest }) => {
+const AddFriendModal = ({ isOpen, onClose, onSendRequest, status }) => {
   const [identifier, setIdentifier] = useState(''); // Can be email, username, etc.
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,6 +55,11 @@ const AddFriendModal = ({ isOpen, onClose, onSendRequest }) => {
         </div>
         
         <form onSubmit={handleSubmit}>
+          {status?.message && (
+            <p className={`text-sm mb-4 ${status.type === 'error' ? 'text-red-500' : status.type === 'success' ? 'text-green-500' : 'text-gray-500'}`}>
+              {status.message}
+            </p>
+          )}
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Enter the email address or username of the friend you want to add.
           </p>
