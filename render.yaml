@@ -1,15 +1,10 @@
 services:
   - type: web
     name: resolve-backend
-    env: node
+    env: docker
     plan: free
-    branch: main
-    buildCommand: |
-      cd back-end
-      npm install
-    startCommand: |
-      cd back-end
-      npm start
+    dockerImage: kavidoi/resolve-backend:latest
+    autoDeploy: true
     envVars:
       - key: MONGODB_URI
         value: "${MONGODB_URI}"
@@ -20,13 +15,9 @@ services:
       - key: CORS_ORIGIN
         value: "https://resolve-xb6d.onrender.com"
 
-  - type: static_site
-    name: resolve-frontend
-    env: static
+  - type: web
+    name: resolve-frontend-docker
+    env: docker
     plan: free
-    branch: main
-    buildCommand: |
-      cd front-end
-      npm install
-      npm run build
-    publishDirectory: front-end/dist 
+    dockerImage: kavidoi/resolve-frontend:latest
+    autoDeploy: true
