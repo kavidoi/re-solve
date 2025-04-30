@@ -4,7 +4,7 @@ import { Handshake } from 'lucide-react';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-secondary to-accent dark:from-gray-900 dark:via-gray-800 dark:to-black text-center px-4">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-secondary to-accent dark:from-gray-900 dark:via-gray-800 dark:to-black text-center relative overflow-hidden">
       
       {/* Logo and Title */}
       <div className="mb-8 flex flex-col items-center">
@@ -36,8 +36,8 @@ const LandingPage = () => {
       </div>
 
       {/* Footer/Copyright */}
-      <div className="absolute bottom-4 text-sm text-gray-500 dark:text-gray-500">
-        © {new Date().getFullYear()} Re:solve
+      <div className="absolute bottom-4 left-0 w-full text-center text-sm text-gray-500 dark:text-gray-500 z-10">
+        &copy; {new Date().getFullYear()} Re:solve
       </div>
     </div>
   );

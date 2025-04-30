@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  resolve-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: resolve-app:latest
+    container_name: resolve-app
+    restart: always
+    ports:
+      - '10000:10000'
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      CORS_ORIGIN: ${CORS_ORIGIN} 

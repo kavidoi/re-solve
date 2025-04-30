@@ -7,8 +7,11 @@ const mongoose = require('mongoose');
 // @route   GET /api/activity/recent
 // @access  Private
 const getRecentActivity = async (req, res, next) => {
+  // Debug logs for activity retrieval
+  console.log('getRecentActivity called for user:', req.user.id);
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id); 
+    console.log('Converted userId:', userId);
     const limit = 20; // Limit the number of activities
 
     // Find expenses paid by the user
@@ -17,11 +20,13 @@ const getRecentActivity = async (req, res, next) => {
       .limit(limit)
       .populate('paidBy', 'name') // Populate payer name
       // .populate('group', 'name'); // Optional: populate group name
+    console.log(`expensesPaidByUser count: ${expensesPaidByUser.length}`);
 
-    // Find unsettled shares involving the user (registered)
-    const unsettledSharesOfUser = await ExpenseShare.find({ user: userId, isSettled: false })
+    // Find shares involving the user (registered)
+    const unsettledSharesOfUser = await ExpenseShare.find({ user: userId })
                                                 .select('expense shareAmount') 
                                                 .limit(limit * 2);
+    console.log(`unsettledSharesOfUser count: ${unsettledSharesOfUser.length}`);
     const expenseIdsOwedByUser = unsettledSharesOfUser.map(s => s.expense);
     // Create a map for quick lookup of share amount
     const shareAmountMap = unsettledSharesOfUser.reduce((map, share) => {
@@ -37,6 +42,7 @@ const getRecentActivity = async (req, res, next) => {
       .limit(limit)
       .populate('paidBy', 'name'); // Populate payer name
       // .populate('group', 'name'); // Optional
+    console.log(`expensesOwedByUser count: ${expensesOwedByUser.length}`);
 
     // Combine and format activities (simple version)
     // In a real app, you might want more sophisticated merging and formatting

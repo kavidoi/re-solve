@@ -45,7 +45,7 @@ const getStatusClasses = (status) => {
     }
 };
 
-const RecentActivity = ({ activities, loading, error }) => {
+const RecentActivity = ({ activities, loading, error, onEdit }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-accent dark:border-gray-700 min-h-[300px]">
@@ -76,34 +76,45 @@ const RecentActivity = ({ activities, loading, error }) => {
       {!loading && !error && activities.length > 0 && (
         <ul className="space-y-4">
           {/* Map over activities prop */}
-          {activities.map((activity) => (
-            <li key={activity._id || activity.id} className="flex items-center justify-between p-3 bg-secondary dark:bg-gray-700 rounded-lg">
-              <div className="flex items-start space-x-3 flex-grow">
-                <span className="text-xl mt-1">{getActivityIcon(activity.type)}</span>
-                <div className="flex-grow">
-                  <p className="text-sm font-medium dark:text-white">{activity.description || 'Activity'}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {/* Display user string from backend for now */}
-                    {activity.user ? `${activity.user} • ` : ''}{formatTimestamp(activity.timestamp)}
-                  </p>
+          {activities.map((activity) => {
+            // Only allow editing for expense-related activities
+            const canEdit = onEdit && activity.type && activity.type.includes('expense');
+            return (
+              <li
+                key={activity._id || activity.id}
+                className={`flex items-center justify-between p-3 bg-secondary dark:bg-gray-700 rounded-lg ${canEdit ? 'cursor-pointer hover:bg-secondary/50 dark:hover:bg-gray-600' : ''}`}
+                role={canEdit ? 'button' : undefined}
+                tabIndex={canEdit ? 0 : undefined}
+                onClick={() => canEdit && onEdit(activity._id || activity.id, activity.description)}
+                onKeyDown={(e) => canEdit && e.key === 'Enter' && onEdit(activity._id || activity.id, activity.description)}
+              >
+                <div className="flex items-start space-x-3 flex-grow">
+                  <span className="text-xl mt-1">{getActivityIcon(activity.type)}</span>
+                  <div className="flex-grow">
+                    <p className="text-sm font-medium dark:text-white">{activity.description || 'Activity'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {/* Display user string from backend for now */}
+                      {activity.user ? `${activity.user} • ` : ''}{formatTimestamp(activity.timestamp)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="text-right flex-shrink-0 ml-2">
-                {/* Use activity.amount directly as formatted in backend */}
-                {typeof activity.amount === 'number' && (
-                  <p className={`text-sm font-semibold ${activity.type === 'payment' || activity.type === 'expense_owed' ? 'text-gray-500 dark:text-gray-400' : 'dark:text-white'}`}>
-                     {/* Display total amount for now - sign might need adjustment based on context */}
-                     ${Math.abs(activity.amount).toFixed(2)} 
-                  </p>
-                )}
-                {activity.status && (
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusClasses(activity.status)}`}>
-                    {activity.status}
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
+                <div className="text-right flex-shrink-0 ml-2">
+                  {/* Use activity.amount directly as formatted in backend */}
+                  {typeof activity.amount === 'number' && (
+                    <p className={`text-sm font-semibold ${activity.type === 'payment' || activity.type === 'expense_owed' ? 'text-gray-500 dark:text-gray-400' : 'dark:text-white'}`}>
+                       {/* Display total amount for now - sign might need adjustment based on context */}
+                       ${Math.abs(activity.amount).toFixed(2)} 
+                    </p>
+                  )}
+                  {activity.status && (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusClasses(activity.status)}`}>
+                      {activity.status}
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

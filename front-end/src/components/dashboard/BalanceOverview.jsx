@@ -54,14 +54,14 @@ const BalanceOverview = ({ balanceData, loading, error }) => {
             </div>
           </div>
 
-          <div className="relative h-4 bg-accent dark:bg-gray-600 rounded-full overflow-hidden">
+          <div className="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div 
               className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 to-primary rounded-full" 
               style={{width: `${owedPercentage}%`}} // Uses calculated value
             ></div>
             <div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-green-500 rounded-full" 
-              style={{width: `${owedToYouPercentage}%`}} // Uses calculated value
+              className="absolute top-0 h-full bg-gradient-to-r from-primary to-green-500 rounded-full" 
+              style={{width: `${owedToYouPercentage}%`, left: `${owedPercentage}%`}} // Offset green segment after red portion
             ></div>
           </div>
         </>

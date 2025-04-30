@@ -181,7 +181,30 @@ const createExpense = async (req, res, next) => {
   } 
 };
 
+// @desc    Update an existing expense's description
+// @route   PUT /api/expenses/:id
+// @access  Private
+const updateExpense = async (req, res, next) => {
+  const { description } = req.body;
+  if (!description) {
+    return res.status(400).json({ message: 'Description is required' });
+  }
+  try {
+    const expense = await Expense.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user.id },
+      { description },
+      { new: true }
+    );
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found or unauthorized' });
+    }
+    res.status(200).json(expense);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createExpense,
-  // Add other expense-related controllers here (getExpense, updateExpense, deleteExpense)
-}; 
+  updateExpense,
+};

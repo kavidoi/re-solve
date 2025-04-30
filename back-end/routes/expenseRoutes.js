@@ -1,5 +1,5 @@
 const express = require('express');
-const { createExpense } = require('../controllers/expenseController');
+const { createExpense, updateExpense } = require('../controllers/expenseController');
 const { protect } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
 
@@ -22,6 +22,14 @@ const createExpenseValidation = [
 // POST /api/expenses
 router.post('/', protect, createExpenseValidation, createExpense);
 
-// Add other expense routes here later (GET /, GET /:id, PUT /:id, DELETE /:id)
+// Validation rules for updating an expense
+const updateExpenseValidation = [
+  body('description', 'Description is required').not().isEmpty().trim(),
+];
+
+// PUT /api/expenses/:id
+router.put('/:id', protect, updateExpenseValidation, updateExpense);
+
+// Add other expense routes here later (GET /, GET /:id, DELETE /:id)
 
 module.exports = router; 

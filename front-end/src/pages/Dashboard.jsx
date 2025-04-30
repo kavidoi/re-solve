@@ -8,6 +8,8 @@ import FriendsList from '../components/dashboard/FriendsList';
 import PendingRequestsList from '../components/dashboard/PendingRequestsList';
 import AddExpenseModal from '../components/ui/AddExpenseModal';
 import AddFriendModal from '../components/ui/AddFriendModal';
+import Settings from '../components/dashboard/Settings';
+import EditExpenseModal from '../components/dashboard/EditExpenseModal';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +19,14 @@ const Dashboard = () => {
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
   const [friendRequestStatus, setFriendRequestStatus] = useState({ message: null, type: null });
   
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editExpenseId, setEditExpenseId] = useState(null);
+  const [editCurrentDescription, setEditCurrentDescription] = useState('');
+
   // Lifted state
   const [groups, setGroups] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
@@ -85,6 +95,18 @@ const Dashboard = () => {
     fetchActivity();
     // Add fetchFriends if/when implemented
   }, [fetchGroups, fetchBalance, fetchActivity]); // Add fetch functions as dependencies
+
+  // Auto-refresh recent activity periodically
+  useEffect(() => {
+    const intervalId = setInterval(fetchActivity, 30000);
+    return () => clearInterval(intervalId);
+  }, [fetchActivity]);
+
+  // Refresh activity when window gains focus
+  useEffect(() => {
+    window.addEventListener('focus', fetchActivity);
+    return () => window.removeEventListener('focus', fetchActivity);
+  }, [fetchActivity]);
 
   // Effect to toggle body overflow
   useEffect(() => {
@@ -179,6 +201,22 @@ const Dashboard = () => {
     // No final setLoading here as it's handled by status message change
   };
 
+  // Handlers for editing expenses
+  const handleOpenEditModal = (id, description) => {
+    setEditExpenseId(id);
+    setEditCurrentDescription(description);
+    setIsEditModalOpen(true);
+  };
+  const handleCloseEditModal = () => setIsEditModalOpen(false);
+  const handleUpdateExpense = async (id, newDescription) => {
+    try {
+      await axios.put(`/api/expenses/${id}`, { description: newDescription });
+      await fetchActivity();
+    } catch (err) {
+      throw err;
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-8">
       {/* Left Sidebar */}
@@ -189,6 +227,12 @@ const Dashboard = () => {
           onCreateGroup={() => console.log('Create group clicked')}
           onAddFriend={handleAddFriendClick}
         />
+        <button
+          className="w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white font-semibold py-2 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          Settings
+        </button>
         <GroupsList 
            groups={groups}
            loading={groupsLoading}
@@ -207,6 +251,7 @@ const Dashboard = () => {
           activities={activities}
           loading={activityLoading}
           error={activityError}
+          onEdit={handleOpenEditModal}
         />
         <PendingRequestsList />
         <FriendsList />
@@ -224,6 +269,32 @@ const Dashboard = () => {
         onSendRequest={handleSendFriendRequest}
         status={friendRequestStatus}
       />
+      <EditExpenseModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        expenseId={editExpenseId}
+        currentDescription={editCurrentDescription}
+        onUpdate={handleUpdateExpense}
+      />
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="relative w-full max-w-xl">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-800 dark:hover:text-white text-2xl font-bold z-10"
+              onClick={() => setIsSettingsOpen(false)}
+              aria-label="Close Settings"
+            >
+              &times;
+            </button>
+            <Settings
+              currentLang="en"
+              onLanguageChange={(lang) => { /* TODO: Implement language switching */ }}
+              onPasswordChange={(oldPw, newPw, setMessage) => { setMessage('Password change not implemented yet.'); }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

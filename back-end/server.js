@@ -28,24 +28,17 @@ app.use(
   })
 ); // Security headers (CSP disabled for inline scripts)
 
-// CORS configuration: allow all origins in development, restrict to CORS_ORIGIN in production
+// CORS configuration: allow dev or specific origin in production
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    // In production, only allow requests from the specified origin
-    if (origin === process.env.CORS_ORIGIN) {
-      return callback(null, true);
-    }
-    callback(new Error('CORS policy violation: ' + origin));
-  },
+  origin: process.env.NODE_ENV === 'development'
+    ? true
+    : process.env.CORS_ORIGIN,
   methods: ['GET','HEAD','PUT','PATCH','POST','DELETE'],
   credentials: true,
 };
 app.use(cors(corsOptions)); // Enable CORS with options
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
@@ -66,10 +59,10 @@ app.use('/api/activity', activityRoutes); // Mount activity routes
 app.use('/api/expenses', expenseRoutes); // Mount expense routes
 app.use('/api/friends', friendRoutes); // Mount friend routes
 
-// Serve React build (SPA) for all other routes
-app.use(express.static(path.join(__dirname, '../front-end/dist')));
+// If running in production, serve the React app
+app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../front-end/dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Enhanced error handling middleware
