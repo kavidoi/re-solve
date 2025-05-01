@@ -1,17 +1,18 @@
-staticSites:
-  - name: re-solve-frontend
+services:
+  - type: static
+    name: resolve-frontend
+    env: static
     branch: main
     root: front-end
     buildCommand: npm ci && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     plan: free
     envVars:
       - key: NODE_ENV
         value: production
 
-services:
-  - name: resolve-backend
-    type: web
+  - type: web
+    name: resolve-backend
     env: java
     branch: main
     root: back-end/resolve-backend
