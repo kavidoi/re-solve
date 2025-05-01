@@ -13,7 +13,7 @@ services:
 
   - type: web
     name: resolve-backend
-    runtime: java
+    env: java
     branch: main
     rootDir: back-end/resolve-backend
     buildCommand: mvn clean package
