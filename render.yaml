@@ -7,7 +7,6 @@ services:
     rootDir: front-end
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
-    plan: free
     envVars:
       - key: NODE_ENV
         value: production
