@@ -20,7 +20,6 @@ services:
     rootDir: back-end/resolve-backend
     dockerfilePath: Dockerfile
     dockerContext: .
-    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: MONGODB_URI
