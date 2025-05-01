@@ -12,12 +12,12 @@ services:
         value: production
 
   - type: web
-    env: java
+    runtime: docker
     name: resolve-backend
     branch: main
     rootDir: back-end/resolve-backend
-    buildCommand: mvn clean package
-    startCommand: java -jar target/resolve-backend-1.0-SNAPSHOT.jar --server.port=$PORT
+    dockerfilePath: Dockerfile
+    dockerContext: .
     plan: starter
     healthCheckPath: /healthz
     envVars:
