@@ -1,5 +1,5 @@
 # Use Maven to build the Spring Boot app
-FROM maven:3.8.8-openjdk-17 AS builder
+FROM maven:3.8.8-openjdk-17-slim AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
