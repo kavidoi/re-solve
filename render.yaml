@@ -6,7 +6,7 @@ services:
     rootDir: front-end
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
-    plan: free
+    plan: starter
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,7 +17,7 @@ services:
     branch: main
     rootDir: back-end/resolve-backend
     buildCommand: mvn clean package
-    plan: free
+    plan: starter
     healthCheckPath: /healthz
     envVars:
       - key: MONGODB_URI
