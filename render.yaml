@@ -1,15 +1,18 @@
-staticSites:
-  - name: resolve-frontend
+services:
+  # Frontend as a static site using the static runtime
+  - type: web
+    runtime: static
+    name: resolve-frontend
     branch: main
-    root: front-end
+    rootDir: front-end
     buildCommand: npm ci && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     plan: free
     envVars:
       - key: NODE_ENV
         value: production
 
-services:
+  # Backend as a Docker-based web service
   - type: web
     runtime: docker
     name: resolve-backend
@@ -17,7 +20,7 @@ services:
     rootDir: back-end/resolve-backend
     dockerfilePath: Dockerfile
     dockerContext: .
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: MONGODB_URI
