@@ -1,20 +1,21 @@
-staticSites:
-  - name: resolve-frontend
+services:
+  - type: web
+    runtime: static
+    name: resolve-frontend
     branch: main
-    root: front-end
+    rootDir: front-end
     buildCommand: npm ci && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     plan: free
     envVars:
       - key: NODE_ENV
         value: production
 
-services:
   - type: web
     name: resolve-backend
-    env: java
+    runtime: java
     branch: main
-    root: back-end/resolve-backend
+    rootDir: back-end/resolve-backend
     buildCommand: mvn clean package
     startCommand: java -jar target/resolve-backend-1.0-SNAPSHOT.jar --server.port=$PORT
     plan: free
