@@ -17,7 +17,6 @@ services:
     branch: main
     rootDir: back-end/resolve-backend
     buildCommand: mvn clean package
-    startCommand: java -jar target/resolve-backend-1.0-SNAPSHOT.jar --server.port=$PORT
     plan: free
     healthCheckPath: /healthz
     envVars:
