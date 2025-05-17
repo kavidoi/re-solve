@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Helper function to format date/time (optional, adjust as needed)
 const formatTimestamp = (isoString) => {
@@ -46,13 +47,14 @@ const getStatusClasses = (status) => {
 };
 
 const RecentActivity = ({ activities, loading, error, onEdit }) => {
+  const { t } = useTranslation();
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-accent dark:border-gray-700 min-h-[300px]">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold dark:text-white">Recent Activity</h2>
+        <h2 className="text-2xl font-bold dark:text-white">{t('dashboard.recentActivity')}</h2>
         {/* Consider making this functional later */}
-        <button className="text-primary hover:underline dark:text-indigo-400">See All</button> 
+        <button className="text-primary hover:underline dark:text-indigo-400">{t('dashboard.seeAll')}</button> 
       </div>
 
       {loading && (

@@ -5,6 +5,6 @@ const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // GET /api/balance/summary
-router.get('/summary', protect, getBalanceSummary);
+router.get('/summary_v2', protect, getBalanceSummary);
 
 module.exports = router; 

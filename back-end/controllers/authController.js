@@ -1,5 +1,5 @@
-const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 // Helper function to generate JWT
 const generateToken = (id) => {
@@ -16,7 +16,9 @@ const registerUser = async (req, res, next) => {
 
   try {
     // Check if user already exists
+    console.log(`[${new Date().toISOString()}] Attempting to find user by email: ${email}`);
     const userExists = await User.findOne({ email });
+    console.log(`[${new Date().toISOString()}] User.findOne completed. User exists: ${!!userExists}`);
     if (userExists) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }

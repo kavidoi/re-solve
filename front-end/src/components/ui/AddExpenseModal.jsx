@@ -179,10 +179,32 @@ const AddExpenseModal = ({ isOpen, onClose, onSave }) => {
     setLoading(true);
     try {
       const payload = { ...expenseData };
+      
+      // Add selection type and ID to the payload
       if (selection) {
-        if (selection.type === 'group') payload.groupId = selection.id;
-        else if (selection.type === 'friend') payload.friendId = selection.id;
+        if (selection.type === 'group') {
+          payload.groupId = selection.id;
+        } else if (selection.type === 'friend') {
+          // For friend expenses, we don't need to send friendId
+          // The backend expects exactly two participants in the splits array
+          // Make sure the splits array is correctly formatted
+          if (payload.splits.length !== 2) {
+            throw new Error('Friend expenses must have exactly two participants');
+          }
+        }
       }
+      
+      // Validate that all splits have a valid percentage
+      const invalidSplits = payload.splits.filter(split => 
+        typeof split.percentage !== 'number' || 
+        isNaN(split.percentage) || 
+        split.percentage < 0
+      );
+      
+      if (invalidSplits.length > 0) {
+        throw new Error('All participants must have a valid percentage');
+      }
+      
       await onSave(payload);
     } catch (err) {
       setError(err.message || 'Failed to save expense');

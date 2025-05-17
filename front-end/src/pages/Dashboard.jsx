@@ -61,13 +61,16 @@ const Dashboard = () => {
 
   const fetchBalance = useCallback(async () => {
     try {
+      console.log('Fetching balance data...');
       setBalanceLoading(true);
       setBalanceError(null);
-      const response = await axios.get('/api/balance/summary');
+      const response = await axios.get('/api/balance/summary_v2');
+      console.log('Balance API response:', response.data);
       setBalanceData(response.data);
     } catch (err) {
       console.error("Error fetching balance summary:", err);
       setBalanceError('Failed to load balance summary.');
+      setBalanceData(null); // Ensure we reset data on error
     } finally {
       setBalanceLoading(false);
     }

@@ -1,8 +1,9 @@
 import React from 'react'; // Removed useState, useEffect
+import { useTranslation } from 'react-i18next';
 // Removed axios
 
 const GroupsList = ({ groups, loading, error }) => { // Accept props
-
+  const { t } = useTranslation();
   // State and useEffect removed
 
   return (

@@ -12,10 +12,13 @@ const createExpense = async (req, res, next) => {
   const loggedInUserId = req.user.id; // User creating the expense
 
   // --- Basic Validation --- 
-  if (!description || !amount || !paidBy || !splits || !Array.isArray(splits) || splits.length === 0) {
+  if (!description || amount === undefined || !paidBy || !splits || !Array.isArray(splits) || splits.length === 0) {
     return res.status(400).json({ message: 'Missing required expense fields (description, amount, paidBy, splits)' });
   }
-  if (typeof amount !== 'number' || amount <= 0) {
+  
+  // Ensure amount is a number
+  const numAmount = parseFloat(amount);
+  if (isNaN(numAmount) || numAmount <= 0) {
     return res.status(400).json({ message: 'Invalid amount' });
   }
 
@@ -41,12 +44,12 @@ const createExpense = async (req, res, next) => {
   }
 
   // Validate split totals
-  if (splitType === 'percentage' && totalSplitPercentage !== 100) {
-    return res.status(400).json({ message: `Split percentages must add up to 100%, currently ${totalSplitPercentage}%` });
+  if (splitType === 'percentage' && Math.abs(totalSplitPercentage - 100) > 0.001) {
+    return res.status(400).json({ message: `Split percentages must add up to 100%, currently ${totalSplitPercentage.toFixed(2)}%` });
   } 
   // Use tolerance for floating point comparison
-  if (splitType === 'amount' && Math.abs(calculatedSplitTotal - amount) > 0.001) {
-    return res.status(400).json({ message: `Split amounts must add up to the total expense amount ($${amount}), currently $${calculatedSplitTotal}` });
+  if (splitType === 'amount' && Math.abs(calculatedSplitTotal - numAmount) > 0.001) {
+    return res.status(400).json({ message: `Split amounts must add up to the total expense amount ($${numAmount.toFixed(2)}), currently $${calculatedSplitTotal.toFixed(2)}` });
   }
 
   // --- Advanced Validation --- 
@@ -126,7 +129,7 @@ const createExpense = async (req, res, next) => {
 
       let shareAmount;
       if (splitType === 'percentage') {
-        shareAmount = (amount * split.percentage) / 100;
+        shareAmount = (numAmount * split.percentage) / 100;
       } else { 
         shareAmount = split.shareAmount;
       }
@@ -150,10 +153,10 @@ const createExpense = async (req, res, next) => {
 
   // --- Database Operations --- 
   try {
-    // Use the resolved paidByUserId
+    // Use the resolved paidByUserId and parsed amount
     const expense = new Expense({
       description,
-      amount,
+      amount: numAmount,
       paidBy: paidByUserId,
       unregisteredPayerName: unregisteredPayerName,
       createdBy: loggedInUserId,

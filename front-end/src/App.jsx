@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LandingPage from './pages/LandingPage';
 import GroupsPage from './pages/GroupsPage';
+import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/routing/ProtectedRoute';
 import PublicRoute from './components/routing/PublicRoute';
 import DarkModeToggle from './components/ui/DarkModeToggle';
@@ -21,7 +23,7 @@ const AppContent = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black text-black dark:text-white transition-colors duration-300">
       {isAuthenticated && <Header />}
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
@@ -31,8 +33,10 @@ const AppContent = () => {
           {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
-          <Route path="/friends" element={<div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"><h1 className="text-2xl font-bold dark:text-white">Friends</h1><p className="dark:text-gray-300">Friends page coming soon</p></div>} />
-          <Route path="/activity" element={<div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"><h1 className="text-2xl font-bold dark:text-white">Activity</h1><p className="dark:text-gray-300">Activity page coming soon</p></div>} />
+          <Route path="/friends" element={<ProtectedRoute><div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"><h1 className="text-2xl font-bold dark:text-white">Friends</h1><p className="dark:text-gray-300">Friends page coming soon</p></div></ProtectedRoute>} />
+          <Route path="/activity" element={<ProtectedRoute><div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"><h1 className="text-2xl font-bold dark:text-white">Activity</h1><p className="dark:text-gray-300">Activity page coming soon</p></div></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
           {/* Fallback for authenticated users */}
           <Route path="*" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
