@@ -64,11 +64,31 @@ const Dashboard = () => {
       console.log('Fetching balance data...');
       setBalanceLoading(true);
       setBalanceError(null);
+      
+      // Log auth headers to confirm they're set
+      console.log('Auth header present:', !!axios.defaults.headers.common['Authorization']);
+      
       const response = await axios.get('/api/balance/summary_v2');
       console.log('Balance API response:', response.data);
+      console.log('Balance data structure check:', {
+        totalOwedExists: 'totalOwed' in response.data,
+        totalOwedToYouExists: 'totalOwedToYou' in response.data,
+        netBalanceExists: 'netBalance' in response.data,
+        responseType: typeof response.data,
+        dataKeys: Object.keys(response.data || {}),
+        rawData: JSON.stringify(response.data)
+      });
+      
+      // Add to window for debug access
+      window.balanceResponseDebug = response.data;
       setBalanceData(response.data);
     } catch (err) {
       console.error("Error fetching balance summary:", err);
+      console.error("Error details:", {
+        message: err.message,
+        responseStatus: err.response?.status,
+        responseData: err.response?.data
+      });
       setBalanceError('Failed to load balance summary.');
       setBalanceData(null); // Ensure we reset data on error
     } finally {
