@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { useTranslation } from 'react-i18next';
-import { useSwipeable } from 'react-swipeable';
+// Removed useSwipeable import as we're using manual touch handling
 import axios from 'axios';
 
 // Helper function to format date/time (optional, adjust as needed)
@@ -47,6 +47,99 @@ const getStatusClasses = (status) => {
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
+};
+
+// A separate component for each activity item to correctly use hooks
+const ActivityItem = ({ activity, canEdit, isExpenseType, showDeleteButtonFor, setShowDeleteButtonFor, onEdit, handleDelete, t }) => {
+  const activityId = activity._id || activity.id;
+  
+  // Handle manual swipe detection without hooks inside a loop
+  const handleTouchStart = (e) => {
+    if (!isExpenseType) return;
+    
+    const touchStartX = e.touches[0].clientX;
+    
+    const handleTouchMove = (moveEvent) => {
+      const currentX = moveEvent.touches[0].clientX;
+      const diff = touchStartX - currentX;
+      
+      // Left swipe threshold
+      if (diff > 70) {
+        setShowDeleteButtonFor(activityId);
+      } 
+      // Right swipe threshold
+      else if (diff < -70 && showDeleteButtonFor === activityId) {
+        setShowDeleteButtonFor(null);
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+  
+  return (
+    <div className="relative"> {/* Wrapper for swipe and positioning delete button */}
+      <div 
+        onTouchStart={handleTouchStart}
+        className="transition-transform duration-200 ease-out" 
+        style={{ transform: showDeleteButtonFor === activityId ? 'translateX(-80px)' : 'translateX(0px)' }}
+      >
+        <li
+          className={`flex items-center justify-between p-3 bg-secondary dark:bg-gray-700 rounded-lg ${canEdit ? 'cursor-pointer hover:bg-secondary/50 dark:hover:bg-gray-600' : ''}`}
+          role={canEdit ? 'button' : undefined}
+          tabIndex={canEdit ? 0 : undefined}
+          onClick={() => {
+            if (showDeleteButtonFor === activityId) {
+              // If delete button is visible and user clicks the item, hide delete button
+              setShowDeleteButtonFor(null);
+            } else if (canEdit) {
+              onEdit(activityId, activity.description);
+            }
+          }}
+          onKeyDown={(e) => canEdit && e.key === 'Enter' && onEdit(activityId, activity.description)}
+        >
+          <div className="flex items-start space-x-3 flex-grow">
+            <span className="text-xl mt-1">{getActivityIcon(activity.type)}</span>
+            <div className="flex-grow">
+              <p className="text-sm font-medium dark:text-white">{activity.description || 'Activity'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {/* Display user string from backend for now */}
+                {activity.user ? `${activity.user} • ` : ''}{formatTimestamp(activity.timestamp)}
+              </p>
+            </div>
+          </div>
+          <div className="text-right flex-shrink-0 ml-2">
+            {/* Use activity.amount directly as formatted in backend */}
+            {typeof activity.amount === 'number' && (
+              <p className={`text-sm font-semibold ${activity.type === 'payment' || activity.type === 'expense_owed' ? 'text-gray-500 dark:text-gray-400' : 'dark:text-white'}`}>
+                 {/* Display total amount now using our formatter */}
+                 {formatCurrency(Math.abs(activity.amount))}
+              </p>
+            )}
+            {activity.status && (
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusClasses(activity.status)}`}>
+                {activity.status}
+              </span>
+            )}
+          </div>
+        </li>
+      </div>
+      {isExpenseType && showDeleteButtonFor === activityId && (
+        <button
+          onClick={() => handleDelete(activityId)}
+          className="absolute top-0 right-0 h-full bg-red-500 hover:bg-red-600 text-white font-semibold px-4 flex items-center justify-center rounded-r-lg transition-opacity duration-200 ease-out"
+          style={{ width: '80px' }} // Fixed width for the delete button
+        >
+          {t('common.delete')}
+        </button>
+      )}
+    </div>
+  );
 };
 
 const RecentActivity = ({ activities, loading, error, onEdit, onActivityDeleted }) => {
@@ -103,76 +196,20 @@ const RecentActivity = ({ activities, loading, error, onEdit, onActivityDeleted 
             // Only allow editing for expense-related activities
             const canEdit = onEdit && activity.type && activity.type.includes('expense');
             const isExpenseType = activity.type && (activity.type.includes('expense') || activity.type === 'payment'); // Define if it's deletable
-
-            const handlers = useSwipeable({
-              onSwipedLeft: () => {
-                if (isExpenseType) {
-                  setShowDeleteButtonFor(activity._id || activity.id);
-                }
-              },
-              onSwipedRight: () => {
-                // Optionally, hide delete button on right swipe if it's visible
-                if (showDeleteButtonFor === (activity._id || activity.id)) {
-                  setShowDeleteButtonFor(null);
-                }
-              },
-              preventScrollOnSwipe: true,
-              trackMouse: true // Allows swiping with mouse for easier testing
-            });
-
+            
+            // Use the dedicated ActivityItem component for each activity
             return (
-              <div key={activity._id || activity.id} className="relative"> {/* Wrapper for swipe and positioning delete button */}
-                <div {...(isExpenseType ? handlers : {})} className="transition-transform duration-200 ease-out" style={{ transform: showDeleteButtonFor === (activity._id || activity.id) ? 'translateX(-80px)' : 'translateX(0px)' }}>
-                  <li
-                    className={`flex items-center justify-between p-3 bg-secondary dark:bg-gray-700 rounded-lg ${canEdit ? 'cursor-pointer hover:bg-secondary/50 dark:hover:bg-gray-600' : ''}`}
-                    role={canEdit ? 'button' : undefined}
-                    tabIndex={canEdit ? 0 : undefined}
-                    onClick={() => {
-                      if (showDeleteButtonFor === (activity._id || activity.id)) {
-                        // If delete button is visible and user clicks the item, hide delete button
-                        setShowDeleteButtonFor(null);
-                      } else if (canEdit) {
-                        onEdit(activity._id || activity.id, activity.description);
-                      }
-                    }}
-                    onKeyDown={(e) => canEdit && e.key === 'Enter' && onEdit(activity._id || activity.id, activity.description)}
-                  >
-                    <div className="flex items-start space-x-3 flex-grow">
-                      <span className="text-xl mt-1">{getActivityIcon(activity.type)}</span>
-                      <div className="flex-grow">
-                        <p className="text-sm font-medium dark:text-white">{activity.description || 'Activity'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {/* Display user string from backend for now */}
-                          {activity.user ? `${activity.user} • ` : ''}{formatTimestamp(activity.timestamp)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-2">
-                      {/* Use activity.amount directly as formatted in backend */}
-                      {typeof activity.amount === 'number' && (
-                        <p className={`text-sm font-semibold ${activity.type === 'payment' || activity.type === 'expense_owed' ? 'text-gray-500 dark:text-gray-400' : 'dark:text-white'}`}>
-                           {/* Display total amount for now - sign might need adjustment based on context */}
-                           {formatCurrency(Math.abs(activity.amount))}
-                        </p>
-                      )}
-                      {activity.status && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusClasses(activity.status)}`}>
-                          {activity.status}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                </div>
-                {isExpenseType && showDeleteButtonFor === (activity._id || activity.id) && (
-                  <button
-                    onClick={() => handleDelete(activity._id || activity.id)}
-                    className="absolute top-0 right-0 h-full bg-red-500 hover:bg-red-600 text-white font-semibold px-4 flex items-center justify-center rounded-r-lg transition-opacity duration-200 ease-out"
-                    style={{ width: '80px' }} // Fixed width for the delete button
-                  >
-                    {t('common.delete')}
-                  </button>
-                )}
-              </div>
+              <ActivityItem
+                key={activity._id || activity.id}
+                activity={activity}
+                canEdit={canEdit}
+                isExpenseType={isExpenseType}
+                showDeleteButtonFor={showDeleteButtonFor}
+                setShowDeleteButtonFor={setShowDeleteButtonFor}
+                onEdit={onEdit}
+                handleDelete={handleDelete}
+                t={t}
+              />
             );
           })}
         </ul>
