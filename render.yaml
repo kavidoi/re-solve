@@ -17,9 +17,8 @@ services:
     runtime: docker
     name: resolve-backend
     branch: main
-    rootDir: back-end
-    dockerfilePath: Dockerfile
-    dockerContext: ./back-end
+    dockerfilePath: back-end/Dockerfile
+    dockerContext: back-end
     plan: starter
     healthCheckPath: /api/health
     envVars:
