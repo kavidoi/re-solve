@@ -27,6 +27,6 @@ services:
       - key: JWT_EXPIRES_IN
         sync: false
       - key: CORS_ORIGIN
-        value: "https://re-solve.onrender.com"
+        value: "https://resolve-frontend-n6tj.onrender.com"
       - key: PORT
         value: 10000
