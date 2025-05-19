@@ -18,26 +18,23 @@ const friendRoutes = require('./routes/friendRoutes'); // Import friend routes
 // Create Express app
 const app = express();
 
-// CORS handling - MUST be the first middleware
+// Disable CORS entirely for maximum compatibility
+// This creates a wide-open CORS policy which is fine for a development/demo environment
 app.use((req, res, next) => {
-  // Always respond to OPTIONS requests for preflight
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request for:', req.url);
-    // These headers must be set for the browser to continue with the actual request
-    res.header('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    // End OPTIONS request with 204 No Content
-    return res.status(204).end();
-  }
-
-  // For non-OPTIONS requests
-  res.header('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', '*');
   next();
+});
+
+// Critical: Global handler for all OPTIONS requests
+// This must be placed BEFORE other routes
+app.options('*', (req, res) => {
+  console.log('Global OPTIONS handler for:', req.url);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', '*');
+  res.sendStatus(200);
 });
 
 // Connect to Database
