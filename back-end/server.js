@@ -59,11 +59,29 @@ app.use('/api/activity', activityRoutes); // Mount activity routes
 app.use('/api/expenses', expenseRoutes); // Mount expense routes
 app.use('/api/friends', friendRoutes); // Mount friend routes
 
-// If running in production, serve the React app
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Add health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
+
+// In production, we'll use separate frontend/backend services
+// Only serve static files if the public directory exists
+if (process.env.NODE_ENV === 'production') {
+  // Check if public directory exists first
+  const publicPath = path.join(__dirname, 'public');
+  try {
+    if (require('fs').existsSync(publicPath)) {
+      app.use(express.static(publicPath));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(publicPath, 'index.html'));
+      });
+    } else {
+      console.log('Public directory not found - running in API-only mode');
+    }
+  } catch (err) {
+    console.log('Error checking for public directory:', err);
+  }
+}
 
 // Enhanced error handling middleware
 app.use((err, req, res, next) => {
