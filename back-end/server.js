@@ -18,23 +18,25 @@ const friendRoutes = require('./routes/friendRoutes'); // Import friend routes
 // Create Express app
 const app = express();
 
-// Direct CORS headers - must be first middleware
+// CORS handling - MUST be the first middleware
 app.use((req, res, next) => {
-  // Allow specific origin
-  res.setHeader('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
-  // Request methods you wish to allow
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  // Request headers you wish to allow
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
-  // Set to true if you need the website to include cookies in the requests
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  // Handle preflight requests
+  // Always respond to OPTIONS requests for preflight
   if (req.method === 'OPTIONS') {
-    return res.status(204).send();
+    console.log('Handling OPTIONS preflight request for:', req.url);
+    // These headers must be set for the browser to continue with the actual request
+    res.header('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    // End OPTIONS request with 204 No Content
+    return res.status(204).end();
   }
-  
-  // Pass to next layer of middleware
+
+  // For non-OPTIONS requests
+  res.header('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
