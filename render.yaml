@@ -21,10 +21,12 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: MONGODB_URI
-        value: "${MONGODB_URI}"
+        sync: false
       - key: JWT_SECRET
-        value: "${JWT_SECRET}"
+        sync: false
       - key: JWT_EXPIRES_IN
-        value: "${JWT_EXPIRES_IN}"
+        sync: false
       - key: CORS_ORIGIN
         value: "https://re-solve.onrender.com"
+      - key: PORT
+        value: 10000

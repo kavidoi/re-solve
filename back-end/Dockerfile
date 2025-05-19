@@ -10,5 +10,5 @@ COPY . ./
 # Set production environment
 ENV NODE_ENV=production
 
-EXPOSE 5001
+EXPOSE 10000
 CMD ["node", "server.js"]
