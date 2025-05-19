@@ -77,14 +77,27 @@ const BalanceOverview = ({ balanceData, loading, error }) => {
           </div>
 
           <div className="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 to-primary rounded-full" 
-              style={{width: `${owedPercentage}%`}} // Uses calculated value
-            ></div>
-            <div 
-              className="absolute top-0 h-full bg-gradient-to-r from-primary to-green-500 rounded-full" 
-              style={{width: `${owedToYouPercentage}%`, left: `${owedPercentage}%`}} // Offset green segment after red portion
-            ></div>
+            {/* Add a small blend area in the middle to create a smooth transition */}
+            {total > 0 && (
+              <>
+                <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 to-primary rounded-full" 
+                  style={{
+                    width: `${Math.min(100, owedPercentage + 0.5)}%`,
+                    zIndex: 1
+                  }}
+                ></div>
+                <div 
+                  className="absolute top-0 h-full bg-gradient-to-r from-primary to-green-500 rounded-full" 
+                  style={{
+                    width: `${Math.min(100, owedToYouPercentage + 0.5)}%`, 
+                    left: `${Math.max(0, owedPercentage - 0.5)}%`,
+                    zIndex: 2,
+                    opacity: 0.9 // Slight transparency for blend effect
+                  }}
+                ></div>
+              </>
+            )}
           </div>
           
           {/* Show a message if there's no activity */}
