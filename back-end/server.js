@@ -28,23 +28,11 @@ app.use(
   })
 ); // Security headers (CSP disabled for inline scripts)
 
-// Enhanced CORS configuration with explicit handling
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'development'
-    ? '*'
-    : process.env.CORS_ORIGIN || 'https://resolve-frontend-n6tj.onrender.com',
-  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
+// Import custom CORS middleware
+const corsMiddleware = require('./middleware/corsMiddleware');
 
-// Apply CORS to all routes
-app.use(cors(corsOptions));
-
-// Handle OPTIONS preflight requests explicitly
-app.options('*', cors(corsOptions));
+// Apply custom CORS middleware
+app.use(corsMiddleware);
 
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
