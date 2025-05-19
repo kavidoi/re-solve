@@ -19,7 +19,7 @@ services:
     branch: main
     rootDir: back-end
     dockerfilePath: Dockerfile
-    dockerContext: .
+    dockerContext: ./back-end
     plan: starter
     healthCheckPath: /api/health
     envVars:
