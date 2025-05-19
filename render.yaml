@@ -5,7 +5,7 @@ services:
     name: resolve-frontend
     branch: main
     rootDir: front-end
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     staticPublishPath: dist
     plan: starter
     envVars:
@@ -17,11 +17,11 @@ services:
     runtime: docker
     name: resolve-backend
     branch: main
-    rootDir: back-end/resolve-backend
+    rootDir: back-end
     dockerfilePath: Dockerfile
     dockerContext: .
     plan: starter
-    healthCheckPath: /healthz
+    healthCheckPath: /api/health
     envVars:
       - key: MONGODB_URI
         value: "${MONGODB_URI}"
