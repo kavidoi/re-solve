@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 import { useTranslation } from 'react-i18next';
 import { useSwipeable } from 'react-swipeable';
 import axios from 'axios';
@@ -151,7 +152,7 @@ const RecentActivity = ({ activities, loading, error, onEdit, onActivityDeleted 
                       {typeof activity.amount === 'number' && (
                         <p className={`text-sm font-semibold ${activity.type === 'payment' || activity.type === 'expense_owed' ? 'text-gray-500 dark:text-gray-400' : 'dark:text-white'}`}>
                            {/* Display total amount for now - sign might need adjustment based on context */}
-                           ${Math.abs(activity.amount).toFixed(2)} 
+                           {formatCurrency(Math.abs(activity.amount))}
                         </p>
                       )}
                       {activity.status && (

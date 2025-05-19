@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency, formatCurrencyWithSign } from '../../utils/formatters';
 import DarkModeToggle from '../ui/DarkModeToggle';
 import { useTranslation } from 'react-i18next';
 
@@ -61,18 +62,18 @@ const BalanceOverview = ({ balanceData, loading, error }) => {
             <div className="bg-secondary dark:bg-gray-700 p-4 rounded-lg border border-accent dark:border-gray-600 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] bg-no-repeat">
               <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('dashboard.totalBalance')}</h3>
               <p className={`text-2xl font-semibold ${safeData.netBalance >= 0 ? 'text-green-700 dark:text-green-500' : 'text-red-700 dark:text-red-500'}`}>
-                {safeData.netBalance >= 0 ? '+' : '-'}${Math.abs(safeData.netBalance).toFixed(2)}
+                {formatCurrencyWithSign(safeData.netBalance)}
               </p>
             </div>
             {/* You Owe */}
             <div className="bg-secondary dark:bg-gray-700 p-4 rounded-lg border border-accent dark:border-gray-600 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] bg-no-repeat">
               <h3 className="text-sm font-medium text-red-600 dark:text-red-400">{t('dashboard.youOwe')}</h3>
-              <p className="text-2xl font-semibold text-red-700 dark:text-red-500">${safeData.totalOwed.toFixed(2)}</p>
+              <p className="text-2xl font-semibold text-red-700 dark:text-red-500">{formatCurrency(safeData.totalOwed)}</p>
             </div>
             {/* You Are Owed */}
             <div className="bg-secondary dark:bg-gray-700 p-4 rounded-lg border border-accent dark:border-gray-600 animate-shimmer bg-shimmer-gradient bg-[length:200%_100%] bg-no-repeat">
               <h3 className="text-sm font-medium text-green-600 dark:text-green-400">{t('dashboard.youAreOwed')}</h3>
-              <p className="text-2xl font-semibold text-green-700 dark:text-green-500">${safeData.totalOwedToYou.toFixed(2)}</p>
+              <p className="text-2xl font-semibold text-green-700 dark:text-green-500">{formatCurrency(safeData.totalOwedToYou)}</p>
             </div>
           </div>
 

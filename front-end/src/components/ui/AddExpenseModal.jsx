@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import ExpenseSplitCake from './ExpenseSplitCake';
 import { fetchGroups } from '../../api/groups';
@@ -371,7 +372,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSave }) => {
                  </div>
                  <div>
                    <span className="text-gray-500 dark:text-gray-400">Amount: </span>
-                   <span className="font-medium dark:text-white">${parseFloat(expenseData.amount).toFixed(2)}</span>
+                   <span className="font-medium dark:text-white">{formatCurrency(parseFloat(expenseData.amount))}</span>
                  </div>
                  <div>
                    <span className="text-gray-500 dark:text-gray-400">Paid by: </span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../../utils/formatters';
 
 const FriendCard = ({ friend }) => {
   const getBgColor = () => {
@@ -31,7 +32,7 @@ const FriendCard = ({ friend }) => {
       </div>
       <div className="flex justify-between items-center">
         <p className={`font-bold ${friend.balance < 0 ? 'text-red-500' : 'text-green-500'}`}>
-          ${Math.abs(friend.balance).toFixed(2)}
+          {formatCurrency(Math.abs(friend.balance))}
         </p>
         <div className="flex space-x-2">
           <button className="w-8 h-8 rounded-full bg-primary bg-opacity-10 flex items-center justify-center text-primary hover:bg-opacity-20 transition">
