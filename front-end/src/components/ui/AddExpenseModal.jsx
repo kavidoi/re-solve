@@ -72,7 +72,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSave }) => {
     return expenseData.splits.reduce((sum, split) => sum + (split.percentage || 0), 0);
   }, [expenseData.splits]);
 
-  const isPercentageValid = totalPercentage === 100;
+  const isPercentageValid = Math.abs(totalPercentage - 100) < 0.01;
 
   // Reset the modal state when it's opened or closed
   useEffect(() => {
@@ -220,7 +220,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleBack = () => {
-    setStep(1);
+    setStep(prev => (prev > 1 ? prev - 1 : 1));
     setError('');
   };
 

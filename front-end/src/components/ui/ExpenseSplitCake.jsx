@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 
 const MAX_SLICES_PER_PERSON = 5;
 
@@ -123,37 +124,45 @@ const ExpenseSplitCake = ({
   // Handle direct percentage input (edit only, don't enforce yet)
   const handlePercentageEdit = (participantId, value) => {
     setEditingPercentages(prev => ({ ...prev, [participantId]: value }));
+    // Removed immediate lastEditedId update; will be set in commit to defer rebalancing
   };
 
-  // On blur or Enter, enforce 100% and update shares
+  // On blur or Enter, update the edited participant's percentage without enforcing 100%
+  // Only rebalance when a different participant gets edited after a manual edit
   const commitPercentageChange = (participantId) => {
     const editValue = editingPercentages[participantId];
     const percentValue = parseFloat(editValue);
+    
+    // Check if the value is valid
     if (isNaN(percentValue) || percentValue < 0 || percentValue > 100) {
       // Reset to actual value if invalid
       setEditingPercentages(prev => ({ ...prev, [participantId]: undefined }));
       return;
     }
+
     const included = participantShares.filter(p => p.included);
+
+    let updatedShares;
+
+    // Distribute the remainder equally among other included participants
     const others = included.filter(p => p.id !== participantId);
-    const otherTotal = others.reduce((sum, p) => sum + p.percentage, 0);
     const remainder = 100 - percentValue;
-    // Distribute remainder proportionally to others
-    let distributed = 0;
-    let updatedShares = participantShares.map((share, idx) => {
+    const equalShare = others.length > 0 ? remainder / others.length : 0;
+
+    updatedShares = participantShares.map(share => {
       if (!share.included) return { ...share, percentage: 0, amount: 0 };
+
       if (share.id === participantId) {
         const slices = percentValue / (100 / included.length);
         return { ...share, percentage: percentValue, amount: (totalAmount * percentValue) / 100, slices };
       }
-      // Proportional distribution
-      let newPerc = otherTotal > 0 ? (share.percentage / otherTotal) * remainder : remainder / others.length;
-      // Ensure last gets the rounding error
-      if (share.id === others[others.length - 1]?.id) newPerc = remainder - distributed;
-      distributed += newPerc;
+      // Assign equal share to others
+      let newPerc = equalShare;
+      newPerc = Math.max(0, Math.min(100, newPerc));
       const slices = newPerc / (100 / included.length);
       return { ...share, percentage: newPerc, amount: (totalAmount * newPerc) / 100, slices };
     });
+
     setParticipantShares(updatedShares);
     setEditingPercentages(prev => ({ ...prev, [participantId]: undefined }));
     if (typeof onSplitChange === 'function') onSplitChange(updatedShares);
@@ -366,7 +375,7 @@ const ExpenseSplitCake = ({
                 
                 {/* Amount and percentage */}
                 <div className="flex flex-col items-end text-xs">
-                  <span className="font-medium">${participant.amount.toFixed(0)}</span>
+                  <span className="font-medium">{formatCurrency(participant.amount)}</span>
                   <div className="flex items-center space-x-1">
                     <input
                       type="number"
