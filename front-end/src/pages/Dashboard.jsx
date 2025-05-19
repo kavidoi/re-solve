@@ -101,14 +101,8 @@ const Dashboard = () => {
 
   // Auto-refresh recent activity periodically
   useEffect(() => {
-    const intervalId = setInterval(fetchActivity, 30000);
+    const intervalId = setInterval(fetchActivity, 300000);
     return () => clearInterval(intervalId);
-  }, [fetchActivity]);
-
-  // Refresh activity when window gains focus
-  useEffect(() => {
-    window.addEventListener('focus', fetchActivity);
-    return () => window.removeEventListener('focus', fetchActivity);
   }, [fetchActivity]);
 
   // Effect to toggle body overflow
