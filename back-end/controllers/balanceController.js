@@ -22,11 +22,23 @@ const getBalanceSummary = async (req, res, next) => {
     // 1. Shares where the current user owes money
     const sharesOwedByUser = await ExpenseShare.find({
       user: userId,
-      isSettled: false
+      $or: [
+        { isSettled: false },
+        { isSettled: null }
+      ]
     }).populate('expense', 'paidBy');
 
+    console.log('Debugging sharesOwedByUser:', sharesOwedByUser.length, 'shares found');
     sharesOwedByUser.forEach(share => {
+      console.log('Processing share:', {
+        shareId: share._id,
+        amount: share.shareAmount,
+        expenseExists: !!share.expense,
+        paidByExists: !!share.expense?.paidBy,
+        isPaidByUser: share.expense?.paidBy?.equals(userId)
+      });
       if (share.expense && share.expense.paidBy && !share.expense.paidBy.equals(userId)) {
+        console.log(`Adding ${share.shareAmount} to totalOwed`);
         totalOwed += share.shareAmount;
       }
     });
@@ -37,14 +49,19 @@ const getBalanceSummary = async (req, res, next) => {
 
     const sharesOwedToUser = await ExpenseShare.find({
       expense: { $in: expenseIdsPaidByUser },
-      isSettled: false,
+      $or: [
+        { isSettled: false },
+        { isSettled: null }
+      ],
       $or: [
         { user: { $ne: userId } },
         { user: null, unregisteredUserName: { $exists: true } }
       ]
     });
 
+    console.log('Debugging sharesOwedToUser:', sharesOwedToUser.length, 'shares found');
     sharesOwedToUser.forEach(share => {
+      console.log(`Adding ${share.shareAmount} to totalOwedToYou from expense ${share.expense}`);
       totalOwedToYou += share.shareAmount;
     });
 
