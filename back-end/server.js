@@ -18,6 +18,26 @@ const friendRoutes = require('./routes/friendRoutes'); // Import friend routes
 // Create Express app
 const app = express();
 
+// Direct CORS headers - must be first middleware
+app.use((req, res, next) => {
+  // Allow specific origin
+  res.setHeader('Access-Control-Allow-Origin', 'https://resolve-frontend-n6tj.onrender.com');
+  // Request methods you wish to allow
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  // Request headers you wish to allow
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
+  // Set to true if you need the website to include cookies in the requests
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send();
+  }
+  
+  // Pass to next layer of middleware
+  next();
+});
+
 // Connect to Database
 connectDB();
 
@@ -27,12 +47,6 @@ app.use(
     contentSecurityPolicy: false
   })
 ); // Security headers (CSP disabled for inline scripts)
-
-// Import custom CORS middleware
-const corsMiddleware = require('./middleware/corsMiddleware');
-
-// Apply custom CORS middleware
-app.use(corsMiddleware);
 
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
