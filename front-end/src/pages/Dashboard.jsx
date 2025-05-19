@@ -234,6 +234,14 @@ const Dashboard = () => {
     }
   };
 
+  // Handle deletion of an activity (expense) from RecentActivity component
+  const handleActivityDeleted = async (deletedActivityId) => {
+    // Optimistically remove the activity from state for snappy UI
+    setActivities(prev => prev.filter(act => (act._id || act.id) !== deletedActivityId));
+    // Refresh balance since it changes after deletion
+    await fetchBalance();
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-8">
       {/* Left Sidebar */}
@@ -269,6 +277,7 @@ const Dashboard = () => {
           loading={activityLoading}
           error={activityError}
           onEdit={handleOpenEditModal}
+          onActivityDeleted={handleActivityDeleted}
         />
         <PendingRequestsList />
         <FriendsList />

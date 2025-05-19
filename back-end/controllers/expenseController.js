@@ -180,7 +180,7 @@ const createExpense = async (req, res, next) => {
 
   } catch (error) {
     console.error('Error creating expense:', error);
-    next(error); 
+    next(error); // Pass to error handling middleware
   } 
 };
 
@@ -207,7 +207,65 @@ const updateExpense = async (req, res, next) => {
   }
 };
 
+// @desc    Delete an expense
+// @route   DELETE /api/expenses/:id
+// @access  Private
+const deleteExpense = async (req, res, next) => {
+  const expenseId = req.params.id;
+  const loggedInUserId = req.user.id;
+
+  if (!mongoose.Types.ObjectId.isValid(expenseId)) {
+    return res.status(400).json({ message: 'Invalid expense ID format' });
+  }
+
+  try {
+    const expense = await Expense.findById(expenseId);
+
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    // Authorization: Only the user who paid for the expense can delete it.
+    // Note: If paidBy is null (e.g., for an unregistered payer that was never converted to a user ID),
+    // this check effectively prevents deletion unless modified.
+    // Consider if expense.createdBy should also be allowed to delete, or other group admin logic.
+    if (!expense.paidBy || expense.paidBy.toString() !== loggedInUserId) {
+        // If paidBy is an unregistered user, expense.unregisteredPayerName would exist.
+        // For now, we strictly check against registered paidBy user ID.
+        return res.status(403).json({ message: 'User not authorized to delete this expense' });
+    }
+
+    // Use a transaction for atomicity if your MongoDB setup supports it (Replica Set or Sharded Cluster)
+    // For standalone instances, atomicity is per-operation, so sequential deletes are generally fine.
+    // const session = await mongoose.startSession();
+    // session.startTransaction();
+
+    try {
+      // Delete the expense shares first
+      await ExpenseShare.deleteMany({ expense: expenseId }/*, { session }*/);
+      
+      // Then delete the expense itself
+      await Expense.findByIdAndDelete(expenseId /*, { session }*/);
+
+      // await session.commitTransaction();
+      res.status(200).json({ message: 'Expense and associated shares deleted successfully' });
+
+    } catch (error) {
+      // await session.abortTransaction();
+      console.error('Error during expense deletion:', error);
+      next(error); // Pass to error handling middleware
+    } finally {
+      // session.endSession();
+    }
+
+  } catch (error) {
+    console.error('Error finding expense for deletion:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   createExpense,
   updateExpense,
+  deleteExpense,
 };

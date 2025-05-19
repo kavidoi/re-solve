@@ -1,5 +1,5 @@
 const express = require('express');
-const { createExpense, updateExpense } = require('../controllers/expenseController');
+const { createExpense, updateExpense, deleteExpense } = require('../controllers/expenseController');
 const { protect } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
 
@@ -30,6 +30,9 @@ const updateExpenseValidation = [
 // PUT /api/expenses/:id
 router.put('/:id', protect, updateExpenseValidation, updateExpense);
 
-// Add other expense routes here later (GET /, GET /:id, DELETE /:id)
+// DELETE /api/expenses/:id
+router.delete('/:id', protect, deleteExpense);
+
+// Add other expense routes here later (GET /, GET /:id)
 
 module.exports = router; 
