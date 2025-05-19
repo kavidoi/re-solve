@@ -28,16 +28,22 @@ app.use(
   })
 ); // Security headers (CSP disabled for inline scripts)
 
-// CORS configuration: allow dev or specific origin in production
+// Enhanced CORS configuration with explicit handling
 const corsOptions = {
   origin: process.env.NODE_ENV === 'development'
-    ? true
-    : process.env.CORS_ORIGIN,
-  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE'],
+    ? '*'
+    : process.env.CORS_ORIGIN || 'https://resolve-frontend-n6tj.onrender.com',
+  methods: ['GET','HEAD','PUT','PATCH','POST','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
-app.use(cors(corsOptions)); // Enable CORS with options
-// Handle preflight requests
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 app.use(express.json()); // Parse JSON bodies
