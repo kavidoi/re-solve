@@ -77,9 +77,9 @@ const BalanceOverview = ({ balanceData, loading, error }) => {
           </div>
 
           <div className="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            {/* Add a small blend area in the middle to create a smooth transition */}
+            {/* Add a small blend area in the middle to create a smooth transition with reflection animation */}
             {total > 0 && (
-              <>
+              <div className="animate-shimmer-reflection w-full h-full">
                 <div 
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-500 to-primary rounded-full" 
                   style={{
@@ -96,7 +96,7 @@ const BalanceOverview = ({ balanceData, loading, error }) => {
                     opacity: 0.9 // Slight transparency for blend effect
                   }}
                 ></div>
-              </>
+              </div>
             )}
           </div>
           
